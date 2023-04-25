@@ -52,45 +52,53 @@ class EventManager
 public:
     // Register a function or lambda function with a specific event name.
     template <typename... Args, typename F>
-    void on(std::string eventName, F &&newFunc)
-    {
-        FunctionType<Args...> func = newFunc;
-        auto itr = funcMap.find(eventName);
-
-        // If the event name already exists, add the new function to the existing vector.
-        if (itr != funcMap.end())
-        {
-            static_cast<DerivedFunctionVector<Args...> *>(itr->second.get())->functions.push_back(func);
-        }
-        // If the event name does not exist, create a new vector and add the function to it.
-        else
-        {
-            auto functionVector = std::make_shared<DerivedFunctionVector<Args...>>();
-            functionVector->functions.push_back(func);
-            funcMap.insert({eventName, functionVector});
-        }
-    }
+    void on(std::string eventName, F &&newFunc);
 
     // Emit an event with the specified name and pass arguments to the registered functions.
     template <typename... Args>
-    void emitEvent(std::string eventName, Args... args)
-    {
-        auto itr = funcMap.find(eventName);
-
-        // If the event name exists, execute all registered functions with the provided arguments.
-        if (itr != funcMap.end())
-        {
-            auto &functions = static_cast<DerivedFunctionVector<Args...> *>(itr->second.get())->functions;
-            for (auto &func : functions)
-            {
-                func(args...);
-            }
-        }
-    }
+    void emitEvent(std::string eventName, Args... args);
 
 private:
     // A map that associates event names with their respective function vectors.
-    std::map<std::string, std::shared_ptr<BaseFunctionVector>> funcMap;
+    std::map<std::string, std::shared_ptr<BaseFunctionVector>> functionsMap;
 };
+
+// Register a function or lambda function with a specific event name.
+template <typename... Args, typename F>
+void EventManager::on(std::string eventName, F &&newFunc)
+{
+    FunctionType<Args...> func = newFunc;
+    auto itr = functionsMap.find(eventName);
+
+    // If the event name already exists, add the new function to the existing vector.
+    if (itr != functionsMap.end())
+    {
+        static_cast<DerivedFunctionVector<Args...> *>(itr->second.get())->functions.push_back(func);
+    }
+    // If the event name does not exist, create a new vector and add the function to it.
+    else
+    {
+        auto functionVector = std::make_shared<DerivedFunctionVector<Args...>>();
+        functionVector->functions.push_back(func);
+        functionsMap.insert({eventName, functionVector});
+    }
+}
+
+// Emit an event with the specified name and pass arguments to the registered functions.
+template <typename... Args>
+void EventManager::emitEvent(std::string eventName, Args... args)
+{
+    auto itr = functionsMap.find(eventName);
+
+    // If the event name exists, execute all registered functions with the provided arguments.
+    if (itr != functionsMap.end())
+    {
+        auto &functions = static_cast<DerivedFunctionVector<Args...> *>(itr->second.get())->functions;
+        for (auto &func : functions)
+        {
+            func(args...);
+        }
+    }
+}
 
 #endif // EVENT_MANAGER_H
